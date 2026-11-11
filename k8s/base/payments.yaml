@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments
+  namespace: beanie
+  labels: {app: payments}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: payments}
+  template:
+    metadata:
+      labels: {app: payments}
+    spec:
+      containers:
+        - name: payments
+          image: beanie:0.1.0
+          args: ["payments"]
+          ports:
+            - containerPort: 8003
+          livenessProbe:
+            httpGet: {path: /healthz, port: 8003}
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: {path: /readyz, port: 8003}
+            periodSeconds: 5
+            failureThreshold: 2
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 128Mi}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments
+  namespace: beanie
+spec:
+  selector: {app: payments}
+  ports:
+    - port: 8003
+      targetPort: 8003
