@@ -2,9 +2,18 @@
 
 ## The situation
 
-Beanie is on Kubernetes and it works, until it does not. On Saturday a customer placed an order, refreshed the page and saw an empty list. A colleague checked and saw three orders; the customer saw none. Then a pod was replaced during a deployment and **every order since the morning vanished**.
+```text
+BUG REPORT #212 - "My order disappeared"                  status: reproducible
+Reporter   : a customer, Saturday
+Steps      : place an order, refresh the page
+Expected   : the order is in the list
+Actual     : the list is empty. A colleague looking at the same time saw three orders.
+Later      : a pod was replaced during a deployment. Every order since the morning vanished.
+Dev reply  : "Without DATABASE_URL, orders live in the process. Two replicas of
+              orders then show different orders."
+```
 
-The cause is in the README: *"Without `DATABASE_URL`, orders live in the process. Two replicas of `orders` then show different orders."* Each pod keeps its own orders in its own memory, and a pod's memory dies with the pod. Today you give Beanie a real database, and you do it the way a cluster expects: the settings in a **ConfigMap**, the password in a **Secret** that never touches git, the database as a **StatefulSet** with a **PersistentVolumeClaim**. The proof is brutal: an order must outlive the deletion of the pod that stored it.
+Each pod keeps its orders in its own memory, and a pod's memory dies with the pod. Today you give Beanie a real database, the way a cluster expects: the settings in a **ConfigMap**, the password in a **Secret** that never touches git, the database as a **StatefulSet** with a **PersistentVolumeClaim**. The proof is brutal: an order must outlive the deletion of the pod that stored it.
 
 > **Your mission**
 > - See the bug first: two `orders` replicas, two different histories
